@@ -6,7 +6,7 @@ class HubMessage {
     private String user;
     private Message message;
 
-    public HubMessage(String user, Message message) {
+    public HubMessage(final String user, final Message message) {
         this.user = user;
         this.message = message;
     }

@@ -19,6 +19,11 @@
             <artifactId>akka-http_2.12</artifactId>
             <version>10.1.1</version>
         </dependency>
+        <dependency>
+            <groupId>io.vavr</groupId>
+            <artifactId>vavr</artifactId>
+            <version>0.9.0</version>
+        </dependency>
     </dependencies>
 
     <build>
