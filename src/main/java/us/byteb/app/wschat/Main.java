@@ -84,8 +84,8 @@ public class Main {
     }
 
     private static Flow<Message, Message, NotUsed> buildMessageFlow(String user, Sink<HubMessage, NotUsed> sink, Source<HubMessage, NotUsed> source) {
-        final Sink<Message, NotUsed> hubSink = Flow
-                .fromFunction((Message message) -> new HubMessage(user, message))
+        final Sink<Message, NotUsed> hubSink = Flow.of(Message.class)
+                .map(message -> new HubMessage(user, message))
                 .to(sink);
 
         final Source<Message, NotUsed> hubSource = source
