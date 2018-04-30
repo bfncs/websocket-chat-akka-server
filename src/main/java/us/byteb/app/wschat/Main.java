@@ -1,5 +1,7 @@
 package us.byteb.app.wschat;
 
+import static java.text.MessageFormat.format;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
@@ -17,15 +19,12 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.*;
 import io.vavr.control.Try;
-import scala.concurrent.duration.FiniteDuration;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.time.Instant;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static java.text.MessageFormat.format;
+import scala.concurrent.duration.FiniteDuration;
 
 public class Main {
 
