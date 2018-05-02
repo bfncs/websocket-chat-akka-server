@@ -1,7 +1,5 @@
 package us.byteb.app.wschat;
 
-import static java.text.MessageFormat.format;
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
@@ -19,12 +17,19 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.*;
 import io.vavr.control.Try;
+import scala.concurrent.duration.FiniteDuration;
+import us.byteb.app.wschat.entity.ChatMessage;
+import us.byteb.app.wschat.entity.HubMessage;
+import us.byteb.app.wschat.entity.MessagePayload;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.time.Instant;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import scala.concurrent.duration.FiniteDuration;
+
+import static java.text.MessageFormat.format;
+import static us.byteb.app.wschat.gson.GsonUtils.getGson;
 
 public class Main {
 
@@ -36,7 +41,10 @@ public class Main {
         buildMessageHub().run(materializer);
 
     buildTickSource()
-        .map(s -> new HubMessage("System", TextMessage.create(format("Hey, the epoch is {0}.", s))))
+        .map(
+            s ->
+                new HubMessage(
+                    "System", new ChatMessage("System", format("Hey, the epoch is {0}.", s))))
         .runWith(messageHub.first(), materializer);
 
     final Function<String, Flow<Message, Message, NotUsed>> flowCreator =
@@ -75,14 +83,23 @@ public class Main {
   private static Flow<Message, Message, NotUsed> buildMessageFlow(
       String user, Sink<HubMessage, NotUsed> sink, Source<HubMessage, NotUsed> source) {
     final Sink<Message, NotUsed> hubSink =
-        Flow.of(Message.class).map(message -> new HubMessage(user, message)).to(sink);
+        Flow.of(Message.class)
+            .flatMapConcat(message -> message.asTextMessage().getStreamedText())
+            .map(message -> getGson().fromJson(message, MessagePayload.class))
+            .map(message -> new HubMessage(user, message))
+            .to(sink);
 
     final Source<Message, NotUsed> hubSource =
         source
             .filter(hubMessage -> !hubMessage.getUser().equals(user))
-            .map(
-                hubMessage ->
-                    prefixMessage(format("{0}: ", hubMessage.getUser()), hubMessage.getMessage()));
+            .flatMapConcat(
+                hubMessage -> {
+                  final MessagePayload payload = hubMessage.getPayload();
+                  if (payload instanceof ChatMessage) {
+                    return Source.single(TextMessage.create(getGson().toJson(payload)));
+                  }
+                  return Source.empty();
+                });
 
     return Flow.fromSinkAndSource(hubSink, hubSource);
   }
@@ -104,10 +121,5 @@ public class Main {
         return HttpResponse.create().withStatus(404);
       }
     };
-  }
-
-  private static TextMessage prefixMessage(final String prefix, final Message message) {
-    final Source<String, ?> streamedText = message.asTextMessage().getStreamedText();
-    return TextMessage.create(Source.single(prefix).concat(streamedText));
   }
 }
