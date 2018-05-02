@@ -20,6 +20,7 @@ import io.vavr.control.Try;
 import scala.concurrent.duration.FiniteDuration;
 import us.byteb.app.wschat.entity.ChatMessage;
 import us.byteb.app.wschat.entity.HubMessage;
+import us.byteb.app.wschat.entity.Login;
 import us.byteb.app.wschat.entity.MessagePayload;
 
 import java.io.BufferedReader;
@@ -95,7 +96,7 @@ public class Main {
             .flatMapConcat(
                 hubMessage -> {
                   final MessagePayload payload = hubMessage.getPayload();
-                  if (payload instanceof ChatMessage) {
+                  if (payload instanceof ChatMessage || payload instanceof Login) {
                     return Source.single(TextMessage.create(getGson().toJson(payload)));
                   }
                   return Source.empty();
