@@ -33,7 +33,7 @@ import us.byteb.app.wschat.entity.MessagePayload;
 
 public class Main {
 
-  public static final FiniteDuration KEEPALIVE_MAX_IDLE = new FiniteDuration(10, TimeUnit.SECONDS);
+  public static final FiniteDuration KEEPALIVE_MAX_IDLE = new FiniteDuration(30, TimeUnit.SECONDS);
   public static final String KEEPALIVE = "keepalive";
   public static final TextMessage KEEPALIVE_MESSAGE = TextMessage.create(KEEPALIVE);
 
