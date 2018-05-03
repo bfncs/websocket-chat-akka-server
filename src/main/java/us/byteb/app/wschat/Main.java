@@ -1,5 +1,8 @@
 package us.byteb.app.wschat;
 
+import static java.text.MessageFormat.format;
+import static us.byteb.app.wschat.gson.GsonUtils.getGson;
+
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
@@ -17,22 +20,22 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.*;
 import io.vavr.control.Try;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.time.Instant;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import scala.concurrent.duration.FiniteDuration;
 import us.byteb.app.wschat.entity.ChatMessage;
 import us.byteb.app.wschat.entity.HubMessage;
 import us.byteb.app.wschat.entity.Login;
 import us.byteb.app.wschat.entity.MessagePayload;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.time.Instant;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-
-import static java.text.MessageFormat.format;
-import static us.byteb.app.wschat.gson.GsonUtils.getGson;
-
 public class Main {
+
+  public static final FiniteDuration KEEPALIVE_MAX_IDLE = new FiniteDuration(10, TimeUnit.SECONDS);
+  public static final String KEEPALIVE = "keepalive";
+  public static final TextMessage KEEPALIVE_MESSAGE = TextMessage.create(KEEPALIVE);
 
   public static void main(String[] args) throws Exception {
     ActorSystem system = ActorSystem.create();
@@ -76,8 +79,8 @@ public class Main {
   }
 
   private static Source<String, Cancellable> buildTickSource() {
-    final FiniteDuration tenSeconds = new FiniteDuration(10, TimeUnit.SECONDS);
-    return Source.tick(tenSeconds, tenSeconds, 0)
+    final FiniteDuration twoMinutes = new FiniteDuration(120, TimeUnit.SECONDS);
+    return Source.tick(twoMinutes, twoMinutes, 0)
         .map(nothing -> String.valueOf(Instant.now().getEpochSecond()));
   }
 
@@ -86,6 +89,7 @@ public class Main {
     final Sink<Message, NotUsed> hubSink =
         Flow.of(Message.class)
             .flatMapConcat(message -> message.asTextMessage().getStreamedText())
+            .filter(message -> !message.equals(KEEPALIVE))
             .map(message -> getGson().fromJson(message, MessagePayload.class))
             .map(message -> new HubMessage(user, message))
             .to(sink);
@@ -100,7 +104,8 @@ public class Main {
                     return Source.single(TextMessage.create(getGson().toJson(payload)));
                   }
                   return Source.empty();
-                });
+                })
+            .keepAlive(KEEPALIVE_MAX_IDLE, () -> KEEPALIVE_MESSAGE);
 
     return Flow.fromSinkAndSource(hubSink, hubSource);
   }

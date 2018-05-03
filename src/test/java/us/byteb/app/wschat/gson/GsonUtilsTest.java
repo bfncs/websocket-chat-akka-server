@@ -1,11 +1,11 @@
 package us.byteb.app.wschat.gson;
 
-import us.byteb.app.wschat.entity.ChatMessage;
-import us.byteb.app.wschat.entity.MessagePayload;
-import us.byteb.app.wschat.entity.Login;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import us.byteb.app.wschat.entity.ChatMessage;
+import us.byteb.app.wschat.entity.Login;
+import us.byteb.app.wschat.entity.MessagePayload;
 
 class GsonUtilsTest {
 
@@ -34,10 +34,7 @@ class GsonUtilsTest {
     final String theUser = "theUser";
     final Login expected = new Login(theUser);
 
-    final String jsonText =
-            String.format(
-                    "{\"type\": \"Login\",\"user\": \"%s\"}",
-                    theUser);
+    final String jsonText = String.format("{\"type\": \"Login\",\"user\": \"%s\"}", theUser);
 
     final MessagePayload parsed = GsonUtils.getGson().fromJson(jsonText, MessagePayload.class);
 
